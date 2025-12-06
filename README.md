@@ -18,5 +18,4 @@ Features
 - Sentiment & tone analysis
 
 Grammar & fluency evaluation
-
 Generates a structured performance report.
