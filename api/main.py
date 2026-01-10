@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from stt_api import router as stt_router
+from api.stt_api import router as stt_router
 
 app = FastAPI(title="DebateGPT Backend")
 
