@@ -1,4 +1,4 @@
-**🗣️ DebateGPT**
+**DebateGPT**
 AI-Based Real-Time Debate Analyzer & Counter-Argument Chatbot
 
 DebateGPT is an AI-powered system that helps users practice debating, analyze speeches, and receive real-time feedback on clarity, argument quality, grammar, logic, and tone.
