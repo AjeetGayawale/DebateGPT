@@ -1,5 +1,4 @@
 import ollama
-import threading
 import time
 from datetime import datetime
 
@@ -19,27 +18,13 @@ print("\nType 'exit' to stop.\n")
 # -----------------------------
 # File setup
 # -----------------------------
-timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-safe_topic = topic.replace(" ", "_")
-filename = f"chatbot_debate_transcript.txt"
+filename = "chatbot_debate_transcript.txt"
 
 log_file = open(filename, "w", encoding="utf-8")
 log_file.write("=== DEBATE GPT TRANSCRIPT ===\n")
 log_file.write(f"Topic  : {topic}\n")
 log_file.write(f"Stance : {stance}\n")
-log_file.write("-" * 60 + "\n\n")
-
-# -----------------------------
-# Thinking indicator
-# -----------------------------
-thinking = False
-
-def show_thinking():
-    dots = 0
-    while thinking:
-        print("\rThinking" + "." * dots + " " * 5, end="", flush=True)
-        dots = (dots + 1) % 7
-        time.sleep(0.5)
+log_file.write("-" * 30 + "\n\n")
 
 # -----------------------------
 # Main chat loop
@@ -58,49 +43,46 @@ while True:
 You are Debate GPT.
 
 STRICT RULES:
-- Do NOT start with phrases like "Ladies and gentlemen", "Respected judges", or any greeting.
-- Give ONLY ONE paragraph.
-- Be direct and professional.
+- Do NOT use any greetings or formal openings.
+- Give ONLY 2–3 short sentences.
+
+- Be clear, simple, and direct.
 - No headings, no bullet points.
 
 Debate topic: {topic}
 User stance: {stance}
 User argument: {msg}
 
-Now generate a single-paragraph debate response that supports the user's stance.
+Now write a very short debate response that goes AGAINST the user's stance.
 """
 
-    # Start thinking animation
-    thinking = True
-    t = threading.Thread(target=show_thinking)
-    t.start()
+    # -----------------------------
+    # STREAMING RESPONSE
+    # -----------------------------
+    print("\n" + "=" * 50)
+    print(" Debate GPT says:\n")
 
-    # Call model
-    res = ollama.chat(
+    bot_reply = ""
+
+    for chunk in ollama.chat(
         model="phi3:mini",
         messages=[
-            {"role": "system", "content": "You are a debate assistant. Follow the rules strictly."},
+            {"role": "system", "content": "You are a debate assistant. Follow rules strictly."},
             {"role": "user", "content": prompt}
-        ]
-    )
+        ],
+        stream=True
+    ):
+        if "message" in chunk and "content" in chunk["message"]:
+            text = chunk["message"]["content"]
+            print(text, end="", flush=True)   # live typing effect
+            bot_reply += text
 
-    # Stop thinking animation
-    thinking = False
-    t.join()
-    print("\r" + " " * 40, end="\r")  # clear line
-
-    bot_reply = res["message"]["content"]
+    print("\n" + "=" * 50 + "\n")
 
     # Save bot output
     log_file.write("DEBATE GPT:\n")
     log_file.write(bot_reply + "\n")
     log_file.write("=" * 60 + "\n\n")
-
-    # Show with spacing
-    print("\n" + "=" * 50)
-    print(" Debate GPT says:\n")
-    print(bot_reply)
-    print("=" * 50 + "\n")
 
 # -----------------------------
 # Close file
@@ -110,4 +92,3 @@ log_file.close()
 
 print(f"\n📄 Debate saved in file: {filename}")
 print("Thank you for using Debate GPT!")
- 
