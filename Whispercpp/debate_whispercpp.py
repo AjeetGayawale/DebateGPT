@@ -23,7 +23,7 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 if not WHISPER_CLI or not WHISPER_MODEL:
     raise RuntimeError(
-        "❌ Whisper paths not configured.\n"
+        " Whisper paths not configured.\n"
         "Please set environment variables:\n"
         "  WHISPER_CLI   → path to whisper-cli.exe\n"
         "  WHISPER_MODEL → path to model file"
@@ -65,7 +65,7 @@ def transcribe_with_whispercpp(wav_path: str) -> str:
 # CLI MODE FUNCTIONS
 # -----------------------------
 def record_turn(user_id, debate_log):
-    print(f"\n🎤 User {user_id}, start speaking…")
+    print(f"\n User {user_id}, start speaking…")
     print("➡ Press CTRL + C to end your turn.\n")
 
     audio_chunks = []
@@ -75,10 +75,10 @@ def record_turn(user_id, debate_log):
             while True:
                 audio_chunks.append(stream.read(1024)[0])
     except KeyboardInterrupt:
-        print("🛑 Turn ended.\n")
+        print(" Turn ended.\n")
 
     if not audio_chunks:
-        print("⚠️ No audio captured.")
+        print(" No audio captured.")
         return
 
     audio = np.concatenate(audio_chunks, axis=0).flatten()
@@ -88,9 +88,9 @@ def record_turn(user_id, debate_log):
 
     tmp_wav = os.path.join(tempfile.gettempdir(), f"debate_{uuid.uuid4().hex}.wav")
     write_wav_int16(tmp_wav, cleaned, sr)
-    print(f"💾 WAV saved: {tmp_wav}")
+    print(f" WAV saved: {tmp_wav}")
 
-    print("🧠 Transcribing with whisper.cpp…")
+    print(" Transcribing with whisper.cpp…")
     transcript = transcribe_with_whispercpp(tmp_wav)
 
     try:
@@ -113,7 +113,7 @@ def run_stt_session():
 
     debate_log = []
 
-    topic = input("📝 Enter the debate topic: ").strip()
+    topic = input("Enter the debate topic: ").strip()
     print(f"\n🎙 The debate topic is: '{topic}'\n")
 
     print("🎙 TWO-USER DEBATE MODE (whisper.cpp)")
@@ -124,7 +124,7 @@ def run_stt_session():
     current_user = 1
 
     while True:
-        print(f"👉 Press ENTER to start User {current_user}'s turn…")
+        print(f" Press ENTER to start User {current_user}'s turn…")
 
         try:
             input()
@@ -140,7 +140,7 @@ def run_stt_session():
                 raise EOFError
 
         except EOFError:
-            print("\n🟥 CTRL + D detected — Ending debate.\n")
+            print("\nCTRL + D detected — Ending debate.\n")
             break
 
     # SAVE TRANSCRIPT
@@ -154,7 +154,7 @@ def run_stt_session():
             f.write(f"{entry['user']}:\n{entry['text']}\n\n")
         f.write("=================================\n")
 
-    print(f"📄 Transcript saved as: {filename}")
+    print(f" Transcript saved as: {filename}")
 
     return filename
 
