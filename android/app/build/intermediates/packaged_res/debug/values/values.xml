@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#E8EEF4</color>
+    <string name="app_name">DebateGPT</string>
+    <style name="Theme.DebateGPT" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorPrimary">#1E3A5F</item>
+        <item name="android:colorPrimaryDark">#152A45</item>
+    </style>
+</resources>
