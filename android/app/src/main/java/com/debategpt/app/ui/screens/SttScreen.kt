@@ -473,7 +473,7 @@ fun AnalysisTabContent(
                 parsed.correctedTranscript?.takeIf { it.isNotBlank() }?.let { corrected ->
                     SectionTitle("Corrected transcript")
                     ExpandableTextCard(
-                        title = "Corrected transcript (readable)",
+                        title = "Grammar-corrected transcript (spelling & grammar fixed)",
                         text = corrected,
                         monospace = false
                     )
@@ -495,11 +495,14 @@ fun AnalysisTabContent(
             }
 
             SectionTitle("Winner")
-            winnerState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            winnerState.error?.let { err ->
+                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
             Button(
                 onClick = onGetWinner,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !winnerState.isLoading
+                enabled = !winnerState.isLoading,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 if (winnerState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -508,17 +511,43 @@ fun AnalysisTabContent(
                 Text(if (winnerState.isLoading) "Computing..." else "Get Winner")
             }
 
-            winnerState.winner?.let { winner ->
+            val hasWinner = !winnerState.winner.isNullOrBlank()
+            val hasScores = !winnerState.scores.isNullOrEmpty()
+            if (hasWinner || hasScores) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Winner", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        Text("🏆 $winner", style = MaterialTheme.typography.headlineSmall)
-                        winnerState.scores?.forEach { (user, score) ->
-                            Text("$user: $score", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "Result",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (hasWinner) {
+                            Text(
+                                "🏆 Winner: ${winnerState.winner}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        if (hasScores) {
+                            winnerState.scores!!.forEach { (user, score) ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(user, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    Text(
+                                        score.toString(),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -772,11 +801,27 @@ private fun SentenceAnalysisCard(item: SentenceAnalysisItem) {
                 }
             }
 
-            Text(
-                text = item.correctedText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Extract just the sentence text (remove speaker label if present)
+            val sentenceText = item.correctedText
+                .removePrefix("USER: ")
+                .removePrefix("DEBATE GPT: ")
+                .removePrefix("User 1: ")
+                .removePrefix("User 2: ")
+                .trim()
+            
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Corrected sentence:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = sentenceText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
             // Clear, user-friendly labels for types
             item.sentiment?.let { s ->
@@ -851,7 +896,7 @@ private fun argumentBadgeColor(argument: String): androidx.compose.ui.graphics.C
     }
 }
 
-@Composable
+
 @Composable
 private fun MarkingPointsCardDynamic(
     marking: Map<String, com.debategpt.app.data.MarkingPoints>

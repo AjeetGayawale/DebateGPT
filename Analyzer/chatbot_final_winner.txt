@@ -1,0 +1,21 @@
+============================================================
+DEBATE WINNER & PERFORMANCE ANALYSIS
+============================================================
+
+USER PERFORMANCE SUMMARY:
+Total Score : 2.0
+POSITIVE   : 1
+Rebuttal   : 1
+
+----------------------------------------
+
+DEBATE GPT PERFORMANCE SUMMARY:
+Total Score : 4.5
+NEGATIVE   : 1
+Rebuttal   : 1
+POSITIVE   : 1
+Claim      : 1
+
+----------------------------------------
+
+🏆 FINAL RESULT: DEBATE GPT

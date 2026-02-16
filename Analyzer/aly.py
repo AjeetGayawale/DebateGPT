@@ -87,12 +87,75 @@ def analyze_debate(mode: str = "stt"):
     # -------------------------------
     tool = language_tool_python.LanguageTool("en-US")
     matches = tool.check(raw_text)
+    # Apply grammar corrections - this fixes spelling, grammar, punctuation
+    # Use the correct() function which applies all corrections automatically
     corrected_text = language_tool_python.utils.correct(raw_text, matches)
+    
+    # Log if corrections were made (for debugging)
+    if len(matches) > 0:
+        print(f"Grammar check found {len(matches)} issues")
+        if corrected_text != raw_text:
+            print("Grammar corrections were applied")
+        else:
+            print("Warning: Grammar check found issues but no corrections were applied")
 
     # -------------------------------
-    # 3.SENTENCE SEGMENTATION
+    # 3.SENTENCE SEGMENTATION (with speaker tracking for chatbot)
     # -------------------------------
-    sentences = nltk.sent_tokenize(corrected_text)
+    # For chatbot mode, split by speaker first, then tokenize each speaker's text
+    if mode == "chatbot":
+        # Split corrected_text by speaker labels
+        speaker_sentences = []
+        current_speaker = None
+        current_text = []
+        
+        for line in corrected_text.split("\n"):
+            line_stripped = line.strip()
+            if "USER:" in line:
+                # Save previous speaker's text if any
+                if current_speaker and current_text:
+                    text_block = "\n".join(current_text)
+                    sentences = nltk.sent_tokenize(text_block)
+                    for sent in sentences:
+                        if sent.strip():
+                            speaker_sentences.append((current_speaker, sent.strip()))
+                current_speaker = "USER"
+                current_text = []
+                # Extract text after USER:
+                parts = line.split("USER:", 1)
+                if len(parts) > 1 and parts[1].strip():
+                    current_text.append(parts[1].strip())
+            elif "DEBATE GPT:" in line:
+                # Save previous speaker's text if any
+                if current_speaker and current_text:
+                    text_block = "\n".join(current_text)
+                    sentences = nltk.sent_tokenize(text_block)
+                    for sent in sentences:
+                        if sent.strip():
+                            speaker_sentences.append((current_speaker, sent.strip()))
+                current_speaker = "DEBATE GPT"
+                current_text = []
+                # Extract text after DEBATE GPT:
+                parts = line.split("DEBATE GPT:", 1)
+                if len(parts) > 1 and parts[1].strip():
+                    current_text.append(parts[1].strip())
+            elif current_speaker and line_stripped and not line_stripped.startswith("[") and not line_stripped.startswith("==="):
+                # Continuation of current speaker's text
+                current_text.append(line_stripped)
+        
+        # Don't forget the last speaker's text
+        if current_speaker and current_text:
+            text_block = "\n".join(current_text)
+            sentences = nltk.sent_tokenize(text_block)
+            for sent in sentences:
+                if sent.strip():
+                    speaker_sentences.append((current_speaker, sent.strip()))
+        
+        sentences_with_speaker = speaker_sentences
+    else:
+        # STT mode: just tokenize normally
+        sentences_list = nltk.sent_tokenize(corrected_text)
+        sentences_with_speaker = [(None, s.strip()) for s in sentences_list if s.strip()]
 
     # -------------------------------
     # 4.SENTIMENT ANALYZER
@@ -155,7 +218,7 @@ def analyze_debate(mode: str = "stt"):
         out.write("-" * 55 + "\n\n")
 
         count = 1
-        for sentence in sentences:
+        for speaker, sentence in sentences_with_speaker:
             if not sentence.strip():
                 continue
 
@@ -163,7 +226,12 @@ def analyze_debate(mode: str = "stt"):
             arg_type, arg_conf, method = detect_argument_type(sentence)
 
             out.write(f"Sentence {count}:\n")
-            out.write(f"Corrected Text : {sentence}\n")
+            # Include speaker label in corrected text for chatbot mode
+            if speaker:
+                corrected_text_line = f"{speaker}: {sentence}"
+            else:
+                corrected_text_line = sentence
+            out.write(f"Corrected Text : {corrected_text_line}\n")
             out.write(f"Sentiment      : {sentiment['label']}\n")
             out.write(f"Confidence     : {round(sentiment['score'], 3)}\n")
             out.write(f"Argument Type  : {arg_type}\n")

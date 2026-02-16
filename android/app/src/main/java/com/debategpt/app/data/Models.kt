@@ -26,15 +26,15 @@ data class MarkingPoints(
 )
 
 data class WinnerResponse(
-    val status: String,
-    val data: WinnerData?
+    val status: String? = null,
+    val data: WinnerData? = null
 )
 
 data class WinnerData(
-    val mode: String,
-    val winner: String,
-    val scores: Map<String, Double>,
-    val output_file: String?
+    val mode: String? = null,
+    val winner: String? = null,
+    val scores: Map<String, Double>? = null,
+    val output_file: String? = null
 )
 
 data class ChatRequest(
