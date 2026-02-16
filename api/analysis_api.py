@@ -38,10 +38,15 @@ def _parse_analysis_stats(analysis_text: str) -> dict:
             continue
 
         # Detect speaker (appears inside "Corrected Text" blocks)
+        # STT format: User 1 / User 2. Chatbot format: USER / DEBATE GPT
         if "User 1:" in line:
             current_speaker = "User 1"
         elif "User 2:" in line:
             current_speaker = "User 2"
+        elif "USER:" in line:
+            current_speaker = "USER"
+        elif "DEBATE GPT:" in line:
+            current_speaker = "DEBATE GPT"
 
         # Detect sentiment
         if line.startswith("Sentiment"):

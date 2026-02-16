@@ -10,15 +10,12 @@ data class TranscribeResponse(
 )
 
 data class AnalyzeResponse(
-    val mode: String,
-    val message: String,
-    val output_file: String?,
-    val sentences_analyzed: Int?,
-    // Added by backend: full contents of debate_final_analysis.txt / chatbot_final_analysis.txt
-    val analysis_text: String? = null,
-    // Added by backend: per-user counts (sentiment + argument types)
+    val mode: String? = null,
+    val message: String? = null,
+    val output_file: String? = null,
+    val sentences_analyzed: Int? = null,
+    @SerializedName("analysis_text") val analysisText: String? = null,
     val stats: Map<String, Map<String, Int>>? = null,
-    // Added by backend: marking points (same weights as winner)
     val marking: Map<String, MarkingPoints>? = null
 )
 

@@ -1,6 +1,5 @@
 package com.debategpt.app.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +19,8 @@ import com.debategpt.app.ui.viewmodel.ChatMessage
 import com.debategpt.app.ui.viewmodel.ChatbotViewModel
 import com.debategpt.app.ui.viewmodel.AnalysisViewModel
 
+private val inputShape = RoundedCornerShape(24.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatbotScreen(
@@ -31,6 +32,8 @@ fun ChatbotScreen(
     val analysisState by analysisViewModel.analysisState.collectAsState()
     val winnerState by analysisViewModel.winnerState.collectAsState()
     val listState = rememberLazyListState()
+    val colorScheme = MaterialTheme.colorScheme
+    var selectedTab by remember { mutableStateOf(0) } // 0 = Chat, 1 = Analysis
 
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) {
@@ -41,12 +44,25 @@ fun ChatbotScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chatbot Debate") },
+                title = {
+                    Column {
+                        Text("Chatbot Debate", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "Debate with AI",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surface,
+                    titleContentColor = colorScheme.onSurface
+                )
             )
         }
     ) { padding ->
@@ -55,124 +71,166 @@ fun ChatbotScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            // Tabs: Chat | Analysis (same pattern as STT module)
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = colorScheme.primary
             ) {
-                OutlinedTextField(
-                    value = state.topic,
-                    onValueChange = { chatbotViewModel.setTopic(it) },
-                    label = { Text("Debate Topic") },
-                    placeholder = { Text("e.g. Should AI replace teachers?") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = state.stance == "favor",
-                        onClick = { chatbotViewModel.setStance("favor") },
-                        label = { Text("Favor") }
-                    )
-                    FilterChip(
-                        selected = state.stance == "against",
-                        onClick = { chatbotViewModel.setStance("against") },
-                        label = { Text("Against") }
-                    )
-                }
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Chat") })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Analysis") })
+            }
 
-                // Show topic & stance summary so user sees debate setup before messages
-                if (state.topic.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            when (selectedTab) {
+                0 -> {
+                    // Chat tab: topic, messages, input
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "Debate setup",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = state.topic,
+                                onValueChange = { chatbotViewModel.setTopic(it) },
+                                label = { Text("Debate Topic") },
+                                placeholder = { Text("e.g. Should AI replace teachers?") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Topic: ${state.topic}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            val stanceLabel = when (state.stance) {
-                                "favor" -> "Favor"
-                                "against" -> "Against"
-                                else -> "Not selected"
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                FilterChip(
+                                    selected = state.stance == "favor",
+                                    onClick = { chatbotViewModel.setStance("favor") },
+                                    label = { Text("Favor") }
+                                )
+                                FilterChip(
+                                    selected = state.stance == "against",
+                                    onClick = { chatbotViewModel.setStance("against") },
+                                    label = { Text("Against") }
+                                )
                             }
-                            Text(
-                                text = "Your stance: $stanceLabel",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+
+                            if (state.topic.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "Debate setup",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Topic: ${state.topic}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = colorScheme.onSurface
+                                        )
+                                        val stanceLabel = when (state.stance) {
+                                            "favor" -> "Favor"
+                                            "against" -> "Against"
+                                            else -> "Not selected"
+                                        }
+                                        Text(
+                                            text = "Your stance: $stanceLabel",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            items(state.messages) { msg ->
+                                MessageBubble(msg)
+                            }
+                        }
+
+                        state.error?.let { error ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                color = colorScheme.errorContainer
+                            ) {
+                                Text(
+                                    text = error,
+                                    color = colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = colorScheme.surface,
+                            shadowElevation = 8.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = state.messageInput,
+                                    onValueChange = { chatbotViewModel.setMessageInput(it) },
+                                    placeholder = { Text("Your argument...") },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isLoading,
+                                    shape = inputShape
+                                )
+                                FilledIconButton(
+                                    onClick = { chatbotViewModel.sendMessage() },
+                                    enabled = state.messageInput.isNotBlank() && !state.isLoading,
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    if (state.isLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = colorScheme.onPrimary
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.Send, contentDescription = "Send")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.messages) { msg ->
-                    MessageBubble(msg)
+                else -> {
+                    // Analysis tab: full analysis report (same as STT module)
+                    AnalysisTabContent(
+                        canAnalyze = state.messages.size >= 2,
+                        analysisState = analysisState,
+                        winnerState = winnerState,
+                        onRunAnalysis = { analysisViewModel.analyzeChatbot() },
+                        onGetWinner = { analysisViewModel.getWinnerChatbot() },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
-
-            state.error?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = state.messageInput,
-                    onValueChange = { chatbotViewModel.setMessageInput(it) },
-                    placeholder = { Text("Your argument...") },
-                    modifier = Modifier.weight(1f),
-                    enabled = !state.isLoading
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                FilledIconButton(
-                    onClick = { chatbotViewModel.sendMessage() },
-                    enabled = state.messageInput.isNotBlank() && !state.isLoading
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(Icons.Default.Send, contentDescription = "Send")
-                    }
-                }
-            }
-
-            // Analysis & winner (same rich UI as STT, reusing shared composable)
-            AnalysisTabContent(
-                canAnalyze = state.messages.size >= 2,
-                analysisState = analysisState,
-                winnerState = winnerState,
-                onRunAnalysis = { analysisViewModel.analyzeChatbot() },
-                onGetWinner = { analysisViewModel.getWinnerChatbot() }
-            )
         }
     }
 }
@@ -180,23 +238,26 @@ fun ChatbotScreen(
 @Composable
 private fun MessageBubble(msg: ChatMessage) {
     val isUser = msg.isUser
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         Surface(
             shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (isUser) 16.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 16.dp
+                topStart = 20.dp,
+                topEnd = 20.dp,
+                bottomStart = if (isUser) 20.dp else 6.dp,
+                bottomEnd = if (isUser) 6.dp else 20.dp
             ),
-            color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+            color = if (isUser) colorScheme.primaryContainer else colorScheme.surfaceVariant,
+            shadowElevation = 1.dp
         ) {
             Text(
                 text = msg.text,
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyLarge
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isUser) colorScheme.onPrimaryContainer else colorScheme.onSurfaceVariant
             )
         }
     }

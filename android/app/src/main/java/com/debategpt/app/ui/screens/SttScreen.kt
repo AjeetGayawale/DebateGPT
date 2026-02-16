@@ -48,15 +48,30 @@ fun SttScreen(
         analysisViewModel.resetWinnerState()
     }
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("STT Debate") },
+                title = {
+                    Column {
+                        Text("STT Debate", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "Record & transcribe",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surface,
+                    titleContentColor = colorScheme.onSurface
+                )
             )
         }
     ) { padding ->
@@ -74,7 +89,8 @@ fun SttScreen(
                     placeholder = { Text("e.g. Should AI replace teachers?") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    enabled = sttState.transcriptTurns.isEmpty()
+                    enabled = sttState.transcriptTurns.isEmpty(),
+                    shape = RoundedCornerShape(16.dp)
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
@@ -137,7 +153,11 @@ fun SttScreen(
             }
 
             // Tabs
-            TabRow(selectedTabIndex = selectedTab) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = colorScheme.primary
+            ) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Debate") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Analysis") })
             }
@@ -165,21 +185,22 @@ fun SttScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(18.dp)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         "Controls",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = colorScheme.primary
                     )
 
                     if (!sttState.isDebateEnded) {
@@ -187,27 +208,29 @@ fun SttScreen(
                             Button(
                                 onClick = { sttViewModel.startRecording(context.applicationContext) },
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = !sttState.isLoading
+                                enabled = !sttState.isLoading,
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text("Start Recording (User ${sttState.currentUser})")
                             }
                             Text(
                                 "Speak clearly for at least 2 seconds, then tap Stop.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = colorScheme.onSurfaceVariant
                             )
                         } else {
                             Button(
                                 onClick = { sttViewModel.stopAndTranscribe() },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text("Stop & Transcribe")
                             }
                             Text(
                                 "Recording… speak now, then tap Stop (min 2 sec).",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = colorScheme.primary
                             )
                         }
 
@@ -215,7 +238,8 @@ fun SttScreen(
                             OutlinedButton(
                                 onClick = { sttViewModel.stopWholeDebate() },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.error),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text("Stop whole debate")
                             }
@@ -236,7 +260,8 @@ fun SttScreen(
 
                     OutlinedButton(
                         onClick = { sttViewModel.startNewDebate() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("New Debate")
                     }
@@ -394,29 +419,50 @@ fun AnalysisTabContent(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            analysisState.marking?.let { marking ->
+            analysisState.marking?.takeIf { it.isNotEmpty() }?.let { marking ->
                 SectionTitle("Marking points")
-                MarkingPointsCard(
-                    user1 = marking["User 1"],
-                    user2 = marking["User 2"]
-                )
+                MarkingPointsCardDynamic(marking = marking)
             }
 
-            analysisState.stats?.let { stats ->
+            analysisState.stats?.takeIf { it.isNotEmpty() }?.let { stats ->
                 SectionTitle("Sentence types summary")
-                Row(
+                if (stats.size <= 2) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        stats.entries.forEach { (userName, userStats) ->
+                            UserStatsCard(
+                                title = userName,
+                                stats = userStats,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        stats.entries.forEach { (userName, userStats) ->
+                            UserStatsCard(
+                                title = userName,
+                                stats = userStats,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (analysisState.analysisSuccess && analysisState.analysisText.isNullOrBlank()) {
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    UserStatsCard(
-                        title = "User 1",
-                        stats = stats["User 1"].orEmpty(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    UserStatsCard(
-                        title = "User 2",
-                        stats = stats["User 2"].orEmpty(),
-                        modifier = Modifier.weight(1f)
+                    Text(
+                        "Detailed analysis text was not returned from the server. You may still see marking and stats above.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -605,6 +651,8 @@ private fun parseDebateFinalAnalysisText(text: String): ParsedFinalAnalysis {
         val speaker = when {
             correctedText.contains("User 1:") -> "User 1"
             correctedText.contains("User 2:") -> "User 2"
+            correctedText.contains("USER:") -> "USER"
+            correctedText.contains("DEBATE GPT:") -> "DEBATE GPT"
             else -> null
         }
         if (correctedText.isNotBlank()) {
@@ -804,9 +852,9 @@ private fun argumentBadgeColor(argument: String): androidx.compose.ui.graphics.C
 }
 
 @Composable
-private fun MarkingPointsCard(
-    user1: com.debategpt.app.data.MarkingPoints?,
-    user2: com.debategpt.app.data.MarkingPoints?
+@Composable
+private fun MarkingPointsCardDynamic(
+    marking: Map<String, com.debategpt.app.data.MarkingPoints>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -817,43 +865,45 @@ private fun MarkingPointsCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("User 1", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                Text(
-                    "Total: ${(user1?.total ?: 0.0)}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+            marking.entries.forEachIndexed { index, (userName, points) ->
+                if (index > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(userName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Total: ${points.total}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                MarkingBreakdownRow("Sentiment", points.sentiment_points)
+                MarkingBreakdownRow("Argument", points.argument_points)
             }
-            MarkingBreakdownRow("Sentiment", user1?.sentiment_points ?: 0.0)
-            MarkingBreakdownRow("Argument", user1?.argument_points ?: 0.0)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("User 2", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                Text(
-                    "Total: ${(user2?.total ?: 0.0)}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            MarkingBreakdownRow("Sentiment", user2?.sentiment_points ?: 0.0)
-            MarkingBreakdownRow("Argument", user2?.argument_points ?: 0.0)
         }
+    }
+}
+
+@Composable
+private fun MarkingPointsCard(
+    user1: com.debategpt.app.data.MarkingPoints?,
+    user2: com.debategpt.app.data.MarkingPoints?
+) {
+    val marking = buildMap {
+        user1?.let { put("User 1", it) }
+        user2?.let { put("User 2", it) }
+    }
+    if (marking.isNotEmpty()) {
+        MarkingPointsCardDynamic(marking = marking)
     }
 }
 

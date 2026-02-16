@@ -44,7 +44,7 @@ class AnalysisViewModel : ViewModel() {
                         isLoading = false,
                         analysisSuccess = true,
                         sentencesAnalyzed = body?.sentences_analyzed,
-                        analysisText = body?.analysis_text,
+                        analysisText = body?.analysisText,
                         stats = body?.stats,
                         marking = body?.marking
                     )
@@ -74,7 +74,7 @@ class AnalysisViewModel : ViewModel() {
                         isLoading = false,
                         analysisSuccess = true,
                         sentencesAnalyzed = body?.sentences_analyzed,
-                        analysisText = body?.analysis_text,
+                        analysisText = body?.analysisText,
                         stats = body?.stats,
                         marking = body?.marking
                     )
